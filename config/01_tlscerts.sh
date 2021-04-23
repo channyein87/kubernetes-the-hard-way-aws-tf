@@ -1,5 +1,27 @@
 #!/bin/bash
 
+while getopts c:w: flag
+do
+    case "${flag}" in
+        c) controller=${OPTARG};;
+        w) worker=${OPTARG};;
+    esac
+done
+echo "No. of controllers: $controller";
+echo "No. of workers: $worker";
+
+CONTROLLERS=()
+for ((i=0; i<${controller}; i++)); do
+    CONTROLLERS+=("controller-${i}")
+done
+echo "Controllers name: ${CONTROLLERS[@]}"
+
+WORKERS=()
+for ((i=0; i<${worker}; i++)); do
+    WORKERS+=("worker-${i}")
+done
+echo "Workers name: ${WORKERS[@]}"
+
 cat > ca-config.json <<EOF
 {
   "signing": {
@@ -63,7 +85,7 @@ cfssl gencert \
   -profile=kubernetes \
   admin-csr.json | cfssljson -bare admin
 
-for instance in worker-0; do
+for instance in ${WORKERS[@]}; do
 HOST_DNS=$(aws ec2 describe-instances \
     --filters Name=tag:Name,Values=${instance} Name=instance-state-name,Values=running \
     --query 'Reservations[*].Instances[*].PrivateDnsName' --output text)
@@ -252,7 +274,7 @@ cfssl gencert \
   -profile=kubernetes \
   service-account-csr.json | cfssljson -bare service-account
 
-for instance in worker-0; do
+for instance in ${WORKERS[@]}; do
   INSTANCE_ID=$(aws ec2 describe-instances \
     --filters Name=tag:Name,Values=${instance} Name=instance-state-name,Values=running \
     --query 'Reservations[*].Instances[*].InstanceId' --output text)
@@ -260,7 +282,7 @@ for instance in worker-0; do
   scp -o "StrictHostKeyChecking no" ca.pem ${instance}-key.pem ${instance}.pem ubuntu@${INSTANCE_ID}:~/
 done
 
-for instance in controller-0 controller-1; do
+for instance in ${CONTROLLERS[@]}; do
   INSTANCE_ID=$(aws ec2 describe-instances \
     --filters Name=tag:Name,Values=${instance} Name=instance-state-name,Values=running \
     --query 'Reservations[*].Instances[*].InstanceId' --output text)

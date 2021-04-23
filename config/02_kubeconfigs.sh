@@ -1,8 +1,30 @@
 #!/bin/bash
 
+while getopts c:w: flag
+do
+    case "${flag}" in
+        c) controller=${OPTARG};;
+        w) worker=${OPTARG};;
+    esac
+done
+echo "No. of controllers: $controller";
+echo "No. of workers: $worker";
+
+CONTROLLERS=()
+for ((i=0; i<${controller}; i++)); do
+    CONTROLLERS+=("controller-${i}")
+done
+echo "Controllers name: ${CONTROLLERS[@]}"
+
+WORKERS=()
+for ((i=0; i<${worker}; i++)); do
+    WORKERS+=("worker-${i}")
+done
+echo "Workers name: ${WORKERS[@]}"
+
 export KUBERNETES_NLB_DNS=$(aws elbv2 describe-load-balancers --names kubernetes-the-hard-way-nlb --query 'LoadBalancers[*].DNSName' --output text)
 
-for instance in worker-0; do
+for instance in ${WORKERS[@]}; do
   HOST_DNS=$(aws ec2 describe-instances \
       --filters Name=tag:Name,Values=${instance} Name=instance-state-name,Values=running \
       --query 'Reservations[*].Instances[*].PrivateDnsName' --output text)
@@ -105,7 +127,7 @@ kubectl config set-context default \
 
 kubectl config use-context default --kubeconfig=admin.kubeconfig
 
-for instance in worker-0; do
+for instance in ${WORKERS[@]}; do
   INSTANCE_ID=$(aws ec2 describe-instances  \
     --filters Name=tag:Name,Values=${instance} Name=instance-state-name,Values=running  \
     --query 'Reservations[*].Instances[*].InstanceId' --output text)
@@ -129,7 +151,7 @@ resources:
       - identity: {}
 EOF
 
-for instance in controller-0 controller-1; do
+for instance in ${CONTROLLERS[@]}; do
   INSTANCE_ID=$(aws ec2 describe-instances  \
     --filters Name=tag:Name,Values=${instance} Name=instance-state-name,Values=running  \
     --query 'Reservations[*].Instances[*].InstanceId' --output text)
