@@ -28,6 +28,10 @@ data "aws_subnet" "private_subnets" {
   id       = each.value
 }
 
+data "aws_route_table" "private" {
+  subnet_id = element(tolist(data.aws_subnet_ids.private_subnet_ids.ids), 0)
+}
+
 resource "aws_security_group" "external" {
   name        = "kubernetes-the-hard-way-allow-external"
   description = "kubernetes-the-hard-way-allow-external"
@@ -131,6 +135,13 @@ resource "aws_security_group_rule" "int_to_ext" {
   protocol                 = -1
   source_security_group_id = aws_security_group.internal.id
   security_group_id        = aws_security_group.external.id
+}
+
+resource "aws_route" "route" {
+  count                  = var.worker_count
+  route_table_id         = data.aws_route_table.private.id
+  instance_id            = aws_instance.workers[count.index].id
+  destination_cidr_block = join("", ["10.200.", count.index, ".0/24"])
 }
 
 /*output "public_subnets" {

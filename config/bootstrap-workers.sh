@@ -180,11 +180,3 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable containerd kubelet kube-proxy
 sudo systemctl start containerd kubelet kube-proxy
-
-export SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${INSTANCE_ID} --query 'Reservations[*].Instances[*].SubnetId' --output text)
-echo $SUBNET_ID
-
-export ROUTETABLE_ID=$(aws ec2 describe-route-tables --filters Name="association.subnet-id",Values="${SUBNET_ID}" --query 'RouteTables[*].RouteTableId' --output text)
-echo $ROUTETABLE_ID
-
-aws ec2 create-route --route-table-id "${ROUTETABLE_ID}" --destination-cidr-block "${POD_CIDR}" --instance-id "${INSTANCE_ID}"
