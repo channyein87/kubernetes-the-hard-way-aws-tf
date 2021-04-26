@@ -28,7 +28,11 @@ data "aws_subnet" "private_subnets" {
   id       = each.value
 }
 
-data "aws_route_table" "private" {
+data "aws_route_table" "public_rt" {
+  subnet_id = element(tolist(data.aws_subnet_ids.public_subnet_ids.ids), 0)
+}
+
+data "aws_route_table" "private_rt" {
   subnet_id = element(tolist(data.aws_subnet_ids.private_subnet_ids.ids), 0)
 }
 
@@ -137,9 +141,16 @@ resource "aws_security_group_rule" "int_to_ext" {
   security_group_id        = aws_security_group.external.id
 }
 
-resource "aws_route" "route" {
+resource "aws_route" "public_route" {
   count                  = var.worker_count
-  route_table_id         = data.aws_route_table.private.id
+  route_table_id         = data.aws_route_table.public_rt.id
+  instance_id            = aws_instance.workers[count.index].id
+  destination_cidr_block = join("", ["10.200.", count.index, ".0/24"])
+}
+
+resource "aws_route" "private_route" {
+  count                  = var.worker_count
+  route_table_id         = data.aws_route_table.private_rt.id
   instance_id            = aws_instance.workers[count.index].id
   destination_cidr_block = join("", ["10.200.", count.index, ".0/24"])
 }
