@@ -39,3 +39,4 @@ config/*.pem
 config/*.json
 config/*.csr
 config/*.kubeconfig
+config/*.yaml
