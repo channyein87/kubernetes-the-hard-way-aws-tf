@@ -1,5 +1,12 @@
 # Kubernetes The Hard Way AWS & Terraform
 
+## Pre-requisites
+
+1. `cfssl` and `cfssljson`
+1. `kubectl`
+1. `awscli` and `session-manager-plugin`
+1. `terraform`
+
 ## Build Infrastruture
 
 ```bash
@@ -18,4 +25,22 @@ sh 01_tlscerts.sh -c 2 -w 2
 
 ```bash
 sh 02_kubeconfigs.sh -c 2 -w 2
+```
+
+## Bootstrap Controllers and Workers
+
+```bash
+sh 03_bootstrap.sh -c 2 -w 2
+```
+
+## Local Authentication and DNS
+
+```bash
+sh 04_dns.sh
+
+kubectl run busybox --image=busybox:1.28 --command -- sleep 3600
+
+kubectl get pods -l run=busybox
+
+kubectl exec -ti busybox -- nslookup kubernetes
 ```
