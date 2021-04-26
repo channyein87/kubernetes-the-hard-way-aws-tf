@@ -44,3 +44,13 @@ kubectl get pods -l run=busybox
 
 kubectl exec -ti busybox -- nslookup kubernetes
 ```
+
+## Smoke Test
+
+[Smoke test](https://github.com/channyein87/kubernetes-the-hard-way-aws-tf/blob/master/config/05_smoketest.md)
+
+## Cleaning Up
+
+```bash
+terraform destroy
+```
