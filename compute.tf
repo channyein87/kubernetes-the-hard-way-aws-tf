@@ -22,10 +22,12 @@ resource "aws_instance" "controllers" {
   instance_type          = "t2.micro"
   key_name               = aws_key_pair.keypair.key_name
   vpc_security_group_ids = [aws_security_group.external.id]
+  source_dest_check      = false
   subnet_id              = element(tolist(data.aws_subnet_ids.public_subnet_ids.ids), count.index)
   iam_instance_profile   = aws_iam_instance_profile.profile.name
   tags = {
     "Name" = join("-", ["controller", count.index])
+    "Role" = "controller"
   }
   depends_on = [aws_iam_instance_profile.profile]
 }
@@ -36,10 +38,12 @@ resource "aws_instance" "workers" {
   instance_type          = "t2.micro"
   key_name               = aws_key_pair.keypair.key_name
   vpc_security_group_ids = [aws_security_group.internal.id]
+  source_dest_check      = false
   subnet_id              = element(tolist(data.aws_subnet_ids.private_subnet_ids.ids), count.index)
   iam_instance_profile   = aws_iam_instance_profile.profile.name
   tags = {
     "Name"     = join("-", ["worker", count.index])
+    "Role"     = "worker"
     "pod-cidr" = join("", ["10.200.", count.index, ".0/24"])
   }
   depends_on = [aws_iam_instance_profile.profile]
