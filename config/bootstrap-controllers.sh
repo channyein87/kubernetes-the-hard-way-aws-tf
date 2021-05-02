@@ -135,7 +135,8 @@ ExecStart=/usr/local/bin/kube-apiserver \\
   --service-node-port-range=30000-32767 \\
   --tls-cert-file=/var/lib/kubernetes/kubernetes.pem \\
   --tls-private-key-file=/var/lib/kubernetes/kubernetes-key.pem \\
-  --v=2
+  --v=2 \\
+  --cloud-provider=aws
 Restart=on-failure
 RestartSec=5
 
@@ -163,7 +164,8 @@ ExecStart=/usr/local/bin/kube-controller-manager \\
   --service-account-private-key-file=/var/lib/kubernetes/service-account-key.pem \\
   --service-cluster-ip-range=10.32.0.0/24 \\
   --use-service-account-credentials=true \\
-  --v=2
+  --v=2 \\
+  --cloud-provider=aws
 Restart=on-failure
 RestartSec=5
 

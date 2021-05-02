@@ -44,11 +44,24 @@ kubectl exec -ti $POD_NAME -- nginx -v
 ## Services
 
 ```bash
-NODE_PORT=$(kubectl get svc nginx \
-  --output=jsonpath='{range .spec.ports[0]}{.nodePort}')
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-lb
+  labels:
+    app: nginx
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+EOF
 
-NODE_IP=$(kubectl get pods -l app=nginx \
-  --output=jsonpath="{.items[0].status.hostIP}")
+ELB_DNS=$(kubectl get svc nginx-lb -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
 
-ssh ubuntu@${INSTANCE_ID} "curl -sI http://${NODE_IP}:${NODE_PORT}"
+curl http://ELB_DNS
 ```

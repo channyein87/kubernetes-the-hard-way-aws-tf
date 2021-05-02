@@ -29,15 +29,13 @@ for instance in ${WORKERS[@]}; do
       --filters Name=tag:Name,Values=${instance} Name=instance-state-name,Values=running \
       --query 'Reservations[*].Instances[*].PrivateDnsName' --output text)
 
-  HOST_NAME=$(echo ${HOST_DNS} | sed 's/\..*//')
-
   kubectl config set-cluster kubernetes-the-hard-way \
     --certificate-authority=ca.pem \
     --embed-certs=true \
     --server=https://$KUBERNETES_NLB_DNS:443 \
     --kubeconfig=${instance}.kubeconfig
 
-  kubectl config set-credentials system:node:${HOST_NAME} \
+  kubectl config set-credentials system:node:${HOST_DNS} \
     --client-certificate=${instance}.pem \
     --client-key=${instance}-key.pem \
     --embed-certs=true \
@@ -45,7 +43,7 @@ for instance in ${WORKERS[@]}; do
 
   kubectl config set-context default \
     --cluster=kubernetes-the-hard-way \
-    --user=system:node:${HOST_NAME} \
+    --user=system:node:${HOST_DNS} \
     --kubeconfig=${instance}.kubeconfig
 
   kubectl config use-context default --kubeconfig=${instance}.kubeconfig

@@ -36,6 +36,9 @@ chmod +x crictl kubectl kube-proxy kubelet runc
 sudo mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
 sudo mv containerd/bin/* /bin/
 
+export HOST_DNS=$(curl -s http://169.254.169.254/latest/meta-data/local-hostname)
+sudo hostnamectl set-hostname ${HOST_DNS}
+
 export INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 export POD_CIDR=$(/usr/local/bin/aws ec2 describe-instances --instance-ids ${INSTANCE_ID} --query 'Reservations[*].Instances[*].Tags[?Key==`pod-cidr`].Value' --output text)
 echo $POD_CIDR
@@ -143,7 +146,8 @@ ExecStart=/usr/local/bin/kubelet \\
   --kubeconfig=/var/lib/kubelet/kubeconfig \\
   --network-plugin=cni \\
   --register-node=true \\
-  --v=2
+  --v=2 \\
+  --cloud-provider=aws
 Restart=on-failure
 RestartSec=5
 
