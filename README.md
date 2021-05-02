@@ -54,3 +54,7 @@ kubectl exec -ti busybox -- nslookup kubernetes
 ```bash
 terraform destroy
 ```
+
+## More Hard Ways
+
+- [Cloud Provider](https://github.com/channyein87/kubernetes-the-hard-way-aws-tf/blob/3e696dc8f7f015de135898c32767424288e24370/README.md)
