@@ -26,8 +26,9 @@ resource "aws_instance" "controllers" {
   subnet_id              = element(tolist(data.aws_subnet_ids.public_subnet_ids.ids), count.index)
   iam_instance_profile   = aws_iam_instance_profile.profile.name
   tags = {
-    "Name" = join("-", ["controller", count.index])
-    "Role" = "controller"
+    "Name"                                          = join("-", ["controller", count.index])
+    "Role"                                          = "controller"
+    "kubernetes.io/cluster/kubernetes-the-hard-way" = "owned"
   }
   depends_on = [aws_iam_instance_profile.profile]
 }
@@ -42,9 +43,10 @@ resource "aws_instance" "workers" {
   subnet_id              = element(tolist(data.aws_subnet_ids.private_subnet_ids.ids), count.index)
   iam_instance_profile   = aws_iam_instance_profile.profile.name
   tags = {
-    "Name"     = join("-", ["worker", count.index])
-    "Role"     = "worker"
-    "pod-cidr" = join("", ["10.200.", count.index, ".0/24"])
+    "Name"                                          = join("-", ["worker", count.index])
+    "Role"                                          = "worker"
+    "kubernetes.io/cluster/kubernetes-the-hard-way" = "owned"
+    "pod-cidr"                                      = join("", ["10.200.", count.index, ".0/24"])
   }
   depends_on = [aws_iam_instance_profile.profile]
 }
@@ -76,9 +78,32 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-resource "aws_iam_role_policy_attachment" "ec2_read" {
+resource "aws_iam_policy" "policy" {
+  name        = "kubernetes-the-hard-way-ec2-policy"
+  path        = "/"
+  description = "kubernetes-the-hard-way-ec2-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "ec2:*",
+          "elasticloadbalancing:*",
+          "ecr:*",
+          "autoscaling:*",
+          "iam:CreateServiceLinkedRole",
+          "kms:DescribeKey"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ec2" {
   role       = aws_iam_role.role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
+  policy_arn = aws_iam_policy.policy.arn
 }
 
 resource "aws_eip" "eip" {

@@ -58,6 +58,9 @@ resource "aws_security_group" "internal" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  tags = {
+    "kubernetes.io/cluster/kubernetes-the-hard-way" = "owned"
+  }
 }
 
 resource "aws_security_group_rule" "ssh" {
@@ -153,6 +156,20 @@ resource "aws_route" "private_route" {
   route_table_id         = data.aws_route_table.private_rt.id
   instance_id            = aws_instance.workers[count.index].id
   destination_cidr_block = join("", ["10.200.", count.index, ".0/24"])
+}
+
+resource "aws_ec2_tag" "public_subnets" {
+  for_each    = data.aws_subnet_ids.public_subnet_ids.ids
+  resource_id = each.value
+  key         = "kubernetes.io/cluster/kubernetes-the-hard-way"
+  value       = "owned"
+}
+
+resource "aws_ec2_tag" "private_subnets" {
+  for_each    = data.aws_subnet_ids.private_subnet_ids.ids
+  resource_id = each.value
+  key         = "kubernetes.io/cluster/kubernetes-the-hard-way"
+  value       = "owned"
 }
 
 /*output "public_subnets" {
