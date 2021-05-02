@@ -1,4 +1,4 @@
-# Kubernetes The Hard Way AWS & Terraform
+# Kubernetes The Hard Way AWS & Terraform w/ Cloud Provider
 
 ## Pre-requisites
 
