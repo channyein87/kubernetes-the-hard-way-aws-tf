@@ -53,6 +53,13 @@ kubectl exec -ti busybox -- nslookup kubernetes
 
 ```bash
 terraform destroy
+
+kubectl config unset users.admin
+kubectl config unset clusters.kubernetes-the-hard-way
+kubectl config unset contexts.kubernetes-the-hard-way
+kubectl config unset current-context
+
+rm config/*.kubeconfig config/*.yaml config/*.json config/*.csr config/*.pem
 ```
 
 ## More Hard Ways

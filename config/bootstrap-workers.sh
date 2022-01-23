@@ -10,14 +10,19 @@ aws --version
 
 sudo swapoff -a
 
+K8S_VER=v1.21.8
+CRITOOLS_VER=v1.23.0
+RUNC_VER=v1.1.0
+CNI_VER=v1.0.1
+CONTAINERD_VER=1.5.9
 wget -q --show-progress --https-only --timestamping \
-  https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.18.0/crictl-v1.18.0-linux-amd64.tar.gz \
-  https://github.com/opencontainers/runc/releases/download/v1.0.0-rc91/runc.amd64 \
-  https://github.com/containernetworking/plugins/releases/download/v0.8.6/cni-plugins-linux-amd64-v0.8.6.tgz \
-  https://github.com/containerd/containerd/releases/download/v1.3.6/containerd-1.3.6-linux-amd64.tar.gz \
-  https://storage.googleapis.com/kubernetes-release/release/v1.18.6/bin/linux/amd64/kubectl \
-  https://storage.googleapis.com/kubernetes-release/release/v1.18.6/bin/linux/amd64/kube-proxy \
-  https://storage.googleapis.com/kubernetes-release/release/v1.18.6/bin/linux/amd64/kubelet
+  https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRITOOLS_VER}/crictl-${CRITOOLS_VER}-linux-amd64.tar.gz \
+  https://github.com/opencontainers/runc/releases/download/${RUNC_VER}/runc.amd64 \
+  https://github.com/containernetworking/plugins/releases/download/${CNI_VER}/cni-plugins-linux-amd64-${CNI_VER}.tgz \
+  https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VER}/containerd-${CONTAINERD_VER}-linux-amd64.tar.gz \
+  https://storage.googleapis.com/kubernetes-release/release/${K8S_VER}/bin/linux/amd64/kubectl \
+  https://storage.googleapis.com/kubernetes-release/release/${K8S_VER}/bin/linux/amd64/kube-proxy \
+  https://storage.googleapis.com/kubernetes-release/release/${K8S_VER}/bin/linux/amd64/kubelet
 
 sudo mkdir -p \
   /etc/cni/net.d \
@@ -28,9 +33,9 @@ sudo mkdir -p \
   /var/run/kubernetes
 
 mkdir containerd
-tar -xvf crictl-v1.18.0-linux-amd64.tar.gz
-tar -xvf containerd-1.3.6-linux-amd64.tar.gz -C containerd
-sudo tar -xvf cni-plugins-linux-amd64-v0.8.6.tgz -C /opt/cni/bin/
+tar -xvf crictl-${CRITOOLS_VER}-linux-amd64.tar.gz
+tar -xvf containerd-${CONTAINERD_VER}-linux-amd64.tar.gz -C containerd
+sudo tar -xvf cni-plugins-linux-amd64-${CNI_VER}.tgz -C /opt/cni/bin/
 sudo mv runc.amd64 runc
 chmod +x crictl kubectl kube-proxy kubelet runc 
 sudo mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
