@@ -10,6 +10,8 @@ done
 echo "No. of controllers: $controller";
 echo "No. of workers: $worker";
 
+rm *.kubeconfig *.yaml
+
 CONTROLLERS=()
 for ((i=0; i<${controller}; i++)); do
     CONTROLLERS+=("controller-${i}")
@@ -34,7 +36,7 @@ for instance in ${WORKERS[@]}; do
   kubectl config set-cluster kubernetes-the-hard-way \
     --certificate-authority=ca.pem \
     --embed-certs=true \
-    --server=https://$KUBERNETES_NLB_DNS:443 \
+    --server=https://${KUBERNETES_NLB_DNS} \
     --kubeconfig=${instance}.kubeconfig
 
   kubectl config set-credentials system:node:${HOST_NAME} \
@@ -54,7 +56,7 @@ done
 kubectl config set-cluster kubernetes-the-hard-way \
   --certificate-authority=ca.pem \
   --embed-certs=true \
-  --server=https://${KUBERNETES_NLB_DNS}:443 \
+  --server=https://${KUBERNETES_NLB_DNS} \
   --kubeconfig=kube-proxy.kubeconfig
 
 kubectl config set-credentials system:kube-proxy \

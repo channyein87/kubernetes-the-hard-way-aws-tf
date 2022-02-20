@@ -10,6 +10,8 @@ done
 echo "No. of controllers: $controller";
 echo "No. of workers: $worker";
 
+rm *.json *.csr *.pem
+
 CONTROLLERS=()
 for ((i=0; i<${controller}; i++)); do
     CONTROLLERS+=("controller-${i}")

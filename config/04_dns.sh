@@ -17,4 +17,4 @@ kubectl config set-context kubernetes-the-hard-way \
 
 kubectl config use-context kubernetes-the-hard-way
 
-kubectl apply -f https://storage.googleapis.com/kubernetes-the-hard-way/coredns-1.7.0.yaml
+kubectl apply -f https://storage.googleapis.com/kubernetes-the-hard-way/coredns-1.8.yaml

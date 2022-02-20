@@ -40,3 +40,6 @@ config/*.json
 config/*.csr
 config/*.kubeconfig
 config/*.yaml
+
+# Jetbrain
+**/.idea/*

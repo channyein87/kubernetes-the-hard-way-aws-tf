@@ -1,10 +1,10 @@
 #!/bin/bash
 
-sudo apt-get update
-sudo apt-get install -y socat conntrack ipset zip
+sudo apt-get -qq update
+sudo apt-get -qq install -y socat conntrack ipset zip
 
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
+unzip -o -q awscliv2.zip
 sudo ./aws/install
 aws --version
 
@@ -15,7 +15,7 @@ CRITOOLS_VER=v1.23.0
 RUNC_VER=v1.1.0
 CNI_VER=v1.0.1
 CONTAINERD_VER=1.5.9
-wget -q --show-progress --https-only --timestamping \
+wget -q --https-only --timestamping \
   https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRITOOLS_VER}/crictl-${CRITOOLS_VER}-linux-amd64.tar.gz \
   https://github.com/opencontainers/runc/releases/download/${RUNC_VER}/runc.amd64 \
   https://github.com/containernetworking/plugins/releases/download/${CNI_VER}/cni-plugins-linux-amd64-${CNI_VER}.tgz \
@@ -47,7 +47,7 @@ echo $POD_CIDR
 
 cat <<EOF | sudo tee /etc/cni/net.d/10-bridge.conf
 {
-    "cniVersion": "0.3.1",
+    "cniVersion": "0.4.0",
     "name": "bridge",
     "type": "bridge",
     "bridge": "cnio0",
@@ -65,7 +65,7 @@ EOF
 
 cat <<EOF | sudo tee /etc/cni/net.d/99-loopback.conf
 {
-    "cniVersion": "0.3.1",
+    "cniVersion": "0.4.0",
     "name": "lo",
     "type": "loopback"
 }

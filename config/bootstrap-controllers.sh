@@ -1,18 +1,18 @@
 #!/bin/bash
 
-sudo apt update
-sudo apt install zip -y
+sudo apt -qq update
+sudo apt -qq install zip -y
 
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
+unzip -o -q awscliv2.zip
 sudo ./aws/install
 /usr/local/bin/aws --version
 
-ETCD_VER=v3.5.1
-wget -q --show-progress --https-only --timestamping \
+ETCD_VER=v3.4.15
+wget -q --https-only --timestamping \
   "https://github.com/etcd-io/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz"
 
-sudo tar -xvf etcd-${ETCD_VER}-linux-amd64.tar.gz
+sudo tar -xf etcd-${ETCD_VER}-linux-amd64.tar.gz
 sudo mv etcd-${ETCD_VER}-linux-amd64/etcd* /usr/local/bin/
 
 sudo mkdir -p /etc/etcd /var/lib/etcd
@@ -20,21 +20,24 @@ sudo chmod 700 /var/lib/etcd
 sudo cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
 
 export INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-echo $INTERNAL_IP
 
 export ETCD_NAME=$(hostname -s)
-echo $ETCD_NAME
 
 export CONTROLLER_0_DNS=$(/usr/local/bin/aws ec2 describe-instances --filters Name=tag:Name,Values=controller-0 Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PrivateDnsName' --out text)
 export CONTROLLER_1_DNS=$(/usr/local/bin/aws ec2 describe-instances --filters Name=tag:Name,Values=controller-1 Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PrivateDnsName' --out text)
 
 export CONTROLLER_0=$(echo ${CONTROLLER_0_DNS} | sed 's/\..*//')
 export CONTROLLER_1=$(echo ${CONTROLLER_1_DNS} | sed 's/\..*//')
-echo $CONTROLLER_0 $CONTROLLER_1
 
 export CONTROLLER_0_IP=$(/usr/local/bin/aws ec2 describe-instances --filters Name=tag:Name,Values=controller-0 Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PrivateIpAddress' --out text)
 export CONTROLLER_1_IP=$(/usr/local/bin/aws ec2 describe-instances --filters Name=tag:Name,Values=controller-1 Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PrivateIpAddress' --out text)
-echo $CONTROLLER_0_IP $CONTROLLER_1_IP
+
+echo "internal-ip: $INTERNAL_IP"
+echo "etcd-name: $ETCD_NAME"
+echo "controller-0: $CONTROLLER_0"
+echo "controller-1: $CONTROLLER_1"
+echo "controller-0-ip: $CONTROLLER_0_IP"
+echo "controller-1-ip: $CONTROLLER_1_IP"
 
 cat <<EOF | sudo tee /etc/systemd/system/etcd.service
 [Unit]
@@ -81,7 +84,7 @@ sudo ETCDCTL_API=3 etcdctl member list \
 sudo mkdir -p /etc/kubernetes/config
 
 K8S_VER=v1.21.8
-wget -q --show-progress --https-only --timestamping \
+wget -q --https-only --timestamping \
   "https://storage.googleapis.com/kubernetes-release/release/${K8S_VER}/bin/linux/amd64/kube-apiserver" \
   "https://storage.googleapis.com/kubernetes-release/release/${K8S_VER}/bin/linux/amd64/kube-controller-manager" \
   "https://storage.googleapis.com/kubernetes-release/release/${K8S_VER}/bin/linux/amd64/kube-scheduler" \
@@ -96,12 +99,8 @@ sudo mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
 service-account-key.pem service-account.pem \
 encryption-config.yaml /var/lib/kubernetes/
 
-export INTERNAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-echo $INTERNAL_IP
-
-export CONTROLLER_0_IP=$(/usr/local/bin/aws ec2 describe-instances --filters Name=tag:Name,Values=controller-0 Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PrivateIpAddress' --out text)
-export CONTROLLER_1_IP=$(/usr/local/bin/aws ec2 describe-instances --filters Name=tag:Name,Values=controller-1 Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PrivateIpAddress' --out text)
-echo $CONTROLLER_0_IP $CONTROLLER_1_IP
+export KUBERNETES_NLB_DNS=$(/usr/local/bin/aws elbv2 describe-load-balancers --names kubernetes-the-hard-way-nlb --query 'LoadBalancers[*].DNSName' --output text)
+echo "KUBERNETES_NLB_DNS: ${KUBERNETES_NLB_DNS}"
 
 cat <<EOF | sudo tee /etc/systemd/system/kube-apiserver.service
 [Unit]
@@ -130,9 +129,10 @@ ExecStart=/usr/local/bin/kube-apiserver \\
   --kubelet-certificate-authority=/var/lib/kubernetes/ca.pem \\
   --kubelet-client-certificate=/var/lib/kubernetes/kubernetes.pem \\
   --kubelet-client-key=/var/lib/kubernetes/kubernetes-key.pem \\
-  --kubelet-https=true \\
   --runtime-config='api/all=true' \\
   --service-account-key-file=/var/lib/kubernetes/service-account.pem \\
+  --service-account-signing-key-file=/var/lib/kubernetes/service-account-key.pem \\
+  --service-account-issuer=https://${KUBERNETES_NLB_DNS} \\
   --service-cluster-ip-range=10.32.0.0/24 \\
   --service-node-port-range=30000-32767 \\
   --tls-cert-file=/var/lib/kubernetes/kubernetes.pem \\
@@ -176,7 +176,7 @@ EOF
 sudo mv kube-scheduler.kubeconfig /var/lib/kubernetes/
 
 cat <<EOF | sudo tee /etc/kubernetes/config/kube-scheduler.yaml
-apiVersion: kubescheduler.config.k8s.io/v1alpha1
+apiVersion: kubescheduler.config.k8s.io/v1beta1
 kind: KubeSchedulerConfiguration
 clientConnection:
   kubeconfig: "/var/lib/kubernetes/kube-scheduler.kubeconfig"
@@ -205,7 +205,7 @@ sudo systemctl enable kube-apiserver kube-controller-manager kube-scheduler
 sudo systemctl start kube-apiserver kube-controller-manager kube-scheduler
 
 cat <<EOF | kubectl apply --kubeconfig admin.kubeconfig -f -
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   annotations:
@@ -227,7 +227,7 @@ rules:
 EOF
 
 cat <<EOF | kubectl apply --kubeconfig admin.kubeconfig -f -
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: system:kube-apiserver
@@ -244,7 +244,7 @@ EOF
 
 kubectl get componentstatuses --kubeconfig admin.kubeconfig
 
-sudo apt-get install -y nginx
+sudo apt-get install -qq -y nginx
 
 export INSTANCE_AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
 echo $INSTANCE_AZ
@@ -274,6 +274,4 @@ sudo systemctl restart nginx
 sudo systemctl enable nginx
 
 curl -H "Host: ${NLB_IP}" -i http://127.0.0.1/healthz
-
-export KUBERNETES_NLB_DNS=$(/usr/local/bin/aws elbv2 describe-load-balancers --names kubernetes-the-hard-way-nlb --query 'LoadBalancers[*].DNSName' --output text)
-curl --cacert /etc/etcd/ca.pem https://$KUBERNETES_NLB_DNS/version
+curl --cacert /etc/etcd/ca.pem https://${KUBERNETES_NLB_DNS}/version
