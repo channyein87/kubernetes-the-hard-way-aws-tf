@@ -43,3 +43,6 @@ config/*.yaml
 
 # Jetbrain
 **/.idea/*
+
+# Operating System
+**/.DS_Store
