@@ -1,4 +1,5 @@
 #!/bin/bash
+cd "$(dirname "$0")"
 
 export KUBERNETES_NLB_DNS=$(/usr/local/bin/aws elbv2 describe-load-balancers --names kubernetes-the-hard-way-nlb --query 'LoadBalancers[*].DNSName' --output text)
 
@@ -17,4 +18,4 @@ kubectl config set-context kubernetes-the-hard-way \
 
 kubectl config use-context kubernetes-the-hard-way
 
-kubectl apply -f https://storage.googleapis.com/kubernetes-the-hard-way/coredns-1.8.yaml
+kubectl apply -f ../files/coredns.yaml

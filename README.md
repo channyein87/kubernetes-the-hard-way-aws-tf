@@ -26,26 +26,25 @@ host i-* mi-*
 ## Generate TLS
 
 ```bash
-cd config
-sh 01_tlscerts.sh -c 2 -w 2
+sh config/01_tlscerts.sh -c 2 -w 2
 ```
 
 ## Generate Kube Configs
 
 ```bash
-sh 02_kubeconfigs.sh -c 2 -w 2
+sh config/02_kubeconfigs.sh -c 2 -w 2
 ```
 
 ## Bootstrap Controllers and Workers
 
 ```bash
-sh 03_bootstrap.sh -c 2 -w 2
+sh config/03_bootstrap.sh -c 2 -w 2
 ```
 
 ## Local Authentication and DNS
 
 ```bash
-sh 04_dns.sh
+sh config/04_dns.sh
 
 kubectl run busybox --image=busybox:1.28 --command -- sleep 3600
 
@@ -56,7 +55,11 @@ kubectl exec -ti busybox -- nslookup kubernetes
 
 ## Smoke Test
 
-[Smoke test](https://github.com/channyein87/kubernetes-the-hard-way-aws-tf/blob/master/config/05_smoketest.md)
+[Smoke test](config/05_smoketest.md)
+
+## OIDC Test
+
+[OIDC test](config/06_oidc.md)
 
 ## Cleaning Up
 
@@ -70,7 +73,3 @@ rm config/*.kubeconfig config/*.yaml config/*.json config/*.csr config/*.pem
 
 terraform destroy
 ```
-
-## More Hard Ways
-
-- [Cloud Provider](https://github.com/channyein87/kubernetes-the-hard-way-aws-tf/blob/3e696dc8f7f015de135898c32767424288e24370/README.md)

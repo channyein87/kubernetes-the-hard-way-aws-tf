@@ -51,6 +51,7 @@ resource "aws_instance" "workers" {
 
 resource "aws_iam_role" "role" {
   name = "kubernetes-the-hard-way-ec2-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -64,6 +65,26 @@ resource "aws_iam_role" "role" {
       },
     ]
   })
+
+  inline_policy {
+    name = "kubernetes-the-hard-way-ec2-policy"
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Effect = "Allow"
+          Action = [
+            "ec2:AuthorizeSecurityGroupIngress",
+            "ec2:RevokeSecurityGroupIngress",
+            "tag:GetResources",
+            "s3:ListBucket",
+            "s3:GetBucketLocation"
+          ]
+          Resource = ["*"]
+        }
+      ]
+    })
+  }
 }
 
 resource "aws_iam_instance_profile" "profile" {

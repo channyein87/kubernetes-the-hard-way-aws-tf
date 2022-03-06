@@ -126,6 +126,7 @@ ExecStart=/usr/local/bin/kube-apiserver \\
   --etcd-servers=https://${CONTROLLER_0_IP}:2379,https://${CONTROLLER_1_IP}:2379 \\
   --event-ttl=1h \\
   --encryption-provider-config=/var/lib/kubernetes/encryption-config.yaml \\
+  --feature-gates="ServiceAccountIssuerDiscovery=true" \\
   --kubelet-certificate-authority=/var/lib/kubernetes/ca.pem \\
   --kubelet-client-certificate=/var/lib/kubernetes/kubernetes.pem \\
   --kubelet-client-key=/var/lib/kubernetes/kubernetes-key.pem \\
@@ -133,6 +134,7 @@ ExecStart=/usr/local/bin/kube-apiserver \\
   --service-account-key-file=/var/lib/kubernetes/service-account.pem \\
   --service-account-signing-key-file=/var/lib/kubernetes/service-account-key.pem \\
   --service-account-issuer=https://${KUBERNETES_NLB_DNS} \\
+  --service-account-jwks-uri=https://${KUBERNETES_NLB_DNS}/openid/v1/jwks \\
   --service-cluster-ip-range=10.32.0.0/24 \\
   --service-node-port-range=30000-32767 \\
   --tls-cert-file=/var/lib/kubernetes/kubernetes.pem \\
@@ -204,6 +206,37 @@ sudo systemctl daemon-reload
 sudo systemctl enable kube-apiserver kube-controller-manager kube-scheduler
 sudo systemctl start kube-apiserver kube-controller-manager kube-scheduler
 
+sudo apt-get install -qq -y nginx
+
+export INSTANCE_AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+echo $INSTANCE_AZ
+
+export NLB_IP=$(/usr/local/bin/aws ec2 describe-network-interfaces --filters Name=description,Values="*kubernetes-the-hard-way-nlb*" \
+  Name=availability-zone,Values="${INSTANCE_AZ}" --query 'NetworkInterfaces[*].PrivateIpAddresses[*].PrivateIpAddress' --output text)
+echo $NLB_IP
+
+cat > ${NLB_IP} <<EOF
+server {
+  listen      80;
+  server_name ${NLB_IP};
+
+  location /healthz {
+     proxy_pass                    https://127.0.0.1:6443/healthz;
+     proxy_ssl_trusted_certificate /var/lib/kubernetes/ca.pem;
+  }
+}
+EOF
+
+sudo mv ${NLB_IP} \
+  /etc/nginx/sites-available/${NLB_IP}
+
+sudo ln -s /etc/nginx/sites-available/${NLB_IP} /etc/nginx/sites-enabled/
+
+sudo systemctl restart nginx
+sudo systemctl enable nginx
+
+curl -H "Host: ${NLB_IP}" -i http://127.0.0.1/healthz
+
 cat <<EOF | kubectl apply --kubeconfig admin.kubeconfig -f -
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -242,36 +275,20 @@ subjects:
     name: kubernetes
 EOF
 
-kubectl get componentstatuses --kubeconfig admin.kubeconfig
-
-sudo apt-get install -qq -y nginx
-
-export INSTANCE_AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
-echo $INSTANCE_AZ
-
-export NLB_IP=$(/usr/local/bin/aws ec2 describe-network-interfaces --filters Name=description,Values="*kubernetes-the-hard-way-nlb*" \
-  Name=availability-zone,Values="${INSTANCE_AZ}" --query 'NetworkInterfaces[*].PrivateIpAddresses[*].PrivateIpAddress' --output text)
-echo $NLB_IP
-
-cat > ${NLB_IP} <<EOF
-server {
-  listen      80;
-  server_name ${NLB_IP};
-
-  location /healthz {
-     proxy_pass                    https://127.0.0.1:6443/healthz;
-     proxy_ssl_trusted_certificate /var/lib/kubernetes/ca.pem;
-  }
-}
+cat <<EOF | kubectl apply --kubeconfig admin.kubeconfig -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: oidc-reviewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:service-account-issuer-discovery
+subjects:
+  - kind: Group
+    name: system:unauthenticated
 EOF
 
-sudo mv ${NLB_IP} \
-  /etc/nginx/sites-available/${NLB_IP}
+kubectl get componentstatuses --kubeconfig admin.kubeconfig
 
-sudo ln -s /etc/nginx/sites-available/${NLB_IP} /etc/nginx/sites-enabled/
-
-sudo systemctl restart nginx
-sudo systemctl enable nginx
-
-curl -H "Host: ${NLB_IP}" -i http://127.0.0.1/healthz
 curl --cacert /etc/etcd/ca.pem https://${KUBERNETES_NLB_DNS}/version

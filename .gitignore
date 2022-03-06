@@ -40,6 +40,10 @@ config/*.json
 config/*.csr
 config/*.kubeconfig
 config/*.yaml
+config/*.pub
 
 # Jetbrain
 **/.idea/*
+
+# Operating system
+**/.DS_Store

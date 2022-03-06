@@ -46,6 +46,10 @@ resource "aws_security_group" "external" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    "kubernetes.io/cluster/kubernetes-the-hard-way" = "owned"
+  }
 }
 
 resource "aws_security_group" "internal" {
@@ -57,6 +61,10 @@ resource "aws_security_group" "internal" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    "kubernetes.io/cluster/kubernetes-the-hard-way" = "owned"
   }
 }
 
