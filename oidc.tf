@@ -1,6 +1,10 @@
 data "tls_certificate" "oidc" {
   url          = "https://${aws_lb.nlb.dns_name}"
   verify_chain = false
+
+  depends_on = [
+    null_resource.dns
+  ]
 }
 
 resource "aws_iam_openid_connect_provider" "oidc" {
