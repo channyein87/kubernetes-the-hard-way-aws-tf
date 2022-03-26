@@ -1,7 +1,7 @@
 # Smoke Test
 
 ```bash
-sh 05_smoketest.sh
+sh config/05_smoketest.sh
 ```
 
 ## Data Encryption

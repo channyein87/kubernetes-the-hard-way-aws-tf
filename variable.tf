@@ -17,3 +17,7 @@ variable "controller_count" {
 variable "worker_count" {
   type = number
 }
+
+variable "zone_name" {
+  type = string
+}
