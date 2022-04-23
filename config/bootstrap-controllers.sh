@@ -83,7 +83,7 @@ sudo ETCDCTL_API=3 etcdctl member list \
 
 sudo mkdir -p /etc/kubernetes/config
 
-K8S_VER=v1.21.8
+K8S_VER=v1.21.0
 wget -q --https-only --timestamping \
   "https://storage.googleapis.com/kubernetes-release/release/${K8S_VER}/bin/linux/amd64/kube-apiserver" \
   "https://storage.googleapis.com/kubernetes-release/release/${K8S_VER}/bin/linux/amd64/kube-controller-manager" \
@@ -139,7 +139,8 @@ ExecStart=/usr/local/bin/kube-apiserver \\
   --service-node-port-range=30000-32767 \\
   --tls-cert-file=/var/lib/kubernetes/kubernetes.pem \\
   --tls-private-key-file=/var/lib/kubernetes/kubernetes-key.pem \\
-  --v=2
+  --v=2 \\
+  --cloud-provider=aws
 Restart=on-failure
 RestartSec=5
 

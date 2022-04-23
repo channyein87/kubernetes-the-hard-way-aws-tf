@@ -52,3 +52,11 @@ resource "aws_ec2_tag" "vpc" {
   key         = "kubernetes.io/cluster/kubernetes-the-hard-way"
   value       = "shared"
 }
+
+resource "aws_ec2_tag" "workers" {
+  count = var.worker_count
+
+  resource_id = aws_instance.workers[count.index].id
+  key         = "kubernetes.io/cluster/kubernetes-the-hard-way"
+  value       = "owned"
+}

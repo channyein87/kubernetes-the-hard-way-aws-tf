@@ -9,12 +9,13 @@ sudo ./aws/install
 aws --version
 
 sudo swapoff -a
+sudo modprobe br_netfilter
 
-K8S_VER=v1.21.8
-CRITOOLS_VER=v1.23.0
-RUNC_VER=v1.1.0
-CNI_VER=v1.0.1
-CONTAINERD_VER=1.5.9
+K8S_VER=v1.21.0
+CRITOOLS_VER=v1.21.0
+RUNC_VER=v1.0.3
+CNI_VER=v0.9.1
+CONTAINERD_VER=1.4.13
 wget -q --https-only --timestamping \
   https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRITOOLS_VER}/crictl-${CRITOOLS_VER}-linux-amd64.tar.gz \
   https://github.com/opencontainers/runc/releases/download/${RUNC_VER}/runc.amd64 \
@@ -40,6 +41,9 @@ sudo mv runc.amd64 runc
 chmod +x crictl kubectl kube-proxy kubelet runc 
 sudo mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
 sudo mv containerd/bin/* /bin/
+
+export HOST_DNS=$(curl -s http://169.254.169.254/latest/meta-data/local-hostname)
+sudo hostnamectl set-hostname ${HOST_DNS}
 
 export INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 export POD_CIDR=$(/usr/local/bin/aws ec2 describe-instances --instance-ids ${INSTANCE_ID} --query 'Reservations[*].Instances[*].Tags[?Key==`pod-cidr`].Value' --output text)
@@ -148,7 +152,8 @@ ExecStart=/usr/local/bin/kubelet \\
   --kubeconfig=/var/lib/kubelet/kubeconfig \\
   --network-plugin=cni \\
   --register-node=true \\
-  --v=2
+  --v=2 \\
+  --cloud-provider=aws
 Restart=on-failure
 RestartSec=5
 

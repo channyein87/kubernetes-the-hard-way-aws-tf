@@ -93,11 +93,9 @@ HOST_DNS=$(aws ec2 describe-instances \
     --filters Name=tag:Name,Values=${instance} Name=instance-state-name,Values=running \
     --query 'Reservations[*].Instances[*].PrivateDnsName' --output text)
 
-HOST_NAME=$(echo ${HOST_DNS} | sed 's/\..*//')
-
 cat > ${instance}-csr.json <<EOF
 {
-  "CN": "system:node:${HOST_NAME}",
+  "CN": "system:node:${HOST_DNS}",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -122,7 +120,7 @@ cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=${HOST_NAME},${INTERNAL_IP} \
+  -hostname=${HOST_DNS},${INTERNAL_IP} \
   -profile=kubernetes \
   ${instance}-csr.json | cfssljson -bare ${instance}
 done

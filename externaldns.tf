@@ -1,5 +1,16 @@
 resource "aws_route53_zone" "zone" {
-  name = var.zone_name
+  name          = var.zone_name
+  comment       = "kubernetes-the-hard-way"
+  force_destroy = true
+
+  vpc {
+    vpc_id     = var.vpc_id
+    vpc_region = var.aws_region
+  }
+
+  tags = {
+    "Name" = var.zone_name
+  }
 }
 
 resource "aws_iam_role" "externaldns" {
@@ -45,7 +56,7 @@ resource "aws_iam_role" "externaldns" {
         },
         {
           Effect   = "Allow"
-          Action   = "route53:ListHostedZonesByName"
+          Action   = ["route53:ListHostedZonesByName", "route53:ListHostedZones"]
           Resource = "*"
         },
       ]

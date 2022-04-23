@@ -3,7 +3,7 @@ data "tls_certificate" "oidc" {
   verify_chain = false
 
   depends_on = [
-    null_resource.dns
+    null_resource.bootstrap
   ]
 }
 

@@ -61,6 +61,10 @@ kubectl exec -ti busybox -- nslookup kubernetes
 
 [OIDC test](config/06_oidc.md)
 
+## ALB Add-on Install & Test
+
+[ALB add-on install & test](config/07_alb.md)
+
 ## Cleaning Up
 
 ```bash

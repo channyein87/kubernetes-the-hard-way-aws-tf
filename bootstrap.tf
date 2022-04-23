@@ -30,7 +30,7 @@ resource "null_resource" "bootstrap" {
 
 resource "null_resource" "dns" {
   provisioner "local-exec" {
-    command = "sh config/04_dns.sh -c 2 -w 2"
+    command = "sh config/04_dns.sh"
   }
 
   depends_on = [
@@ -41,6 +41,6 @@ resource "null_resource" "dns" {
 resource "null_resource" "cleanup" {
   provisioner "local-exec" {
     when    = destroy
-    command = "sh config/99_cleanup.sh -c 2 -w 2"
+    command = "sh config/99_cleanup.sh"
   }
 }

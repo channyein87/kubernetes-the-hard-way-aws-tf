@@ -17,7 +17,8 @@ resource "aws_key_pair" "keypair" {
 }
 
 resource "aws_instance" "controllers" {
-  count                  = var.controller_count
+  count = var.controller_count
+
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t2.micro"
   key_name               = aws_key_pair.keypair.key_name
@@ -25,15 +26,18 @@ resource "aws_instance" "controllers" {
   source_dest_check      = false
   subnet_id              = element(tolist(data.aws_subnet_ids.public_subnet_ids.ids), count.index)
   iam_instance_profile   = aws_iam_instance_profile.profile.name
+
   tags = {
     "Name" = join("-", ["controller", count.index])
     "Role" = "controller"
   }
+
   depends_on = [aws_iam_instance_profile.profile]
 }
 
 resource "aws_instance" "workers" {
-  count                  = var.worker_count
+  count = var.worker_count
+
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t2.micro"
   key_name               = aws_key_pair.keypair.key_name
@@ -41,11 +45,20 @@ resource "aws_instance" "workers" {
   source_dest_check      = false
   subnet_id              = element(tolist(data.aws_subnet_ids.private_subnet_ids.ids), count.index)
   iam_instance_profile   = aws_iam_instance_profile.profile.name
+
+  user_data = <<EOF
+    #!/bin/bash
+    export HOST_DNS=$(curl -s http://169.254.169.254/latest/meta-data/local-hostname)
+    sudo hostnamectl set-hostname $${HOST_DNS}
+    sudo reboot
+  EOF
+
   tags = {
     "Name"     = join("-", ["worker", count.index])
     "Role"     = "worker"
     "pod-cidr" = join("", ["10.200.", count.index, ".0/24"])
   }
+
   depends_on = [aws_iam_instance_profile.profile]
 }
 
@@ -100,6 +113,11 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
 resource "aws_iam_role_policy_attachment" "ec2_read" {
   role       = aws_iam_role.role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "ecr_read" {
+  role       = aws_iam_role.role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 resource "aws_eip" "eip" {
